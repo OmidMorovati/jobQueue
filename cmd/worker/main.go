@@ -58,7 +58,7 @@ func main() {
 	registry.Register(handlers.NewGenerateReportJob(logger))
 
 	// Create and start worker pool
-	pool := worker.NewPool(jobQueue, jobRepo, registry, cfg.WorkerConcurrency, cfg.JobTimeout, logger)
+	workerPool := worker.NewPool(jobQueue, jobRepo, registry, cfg.WorkerConcurrency, cfg.JobTimeout, logger)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -74,7 +74,7 @@ func main() {
 	}()
 
 	logger.Info("worker pool starting", "concurrency", cfg.WorkerConcurrency)
-	if err := pool.Start(ctx); err != nil {
+	if err := workerPool.Start(ctx); err != nil {
 		logger.Error("worker pool error", "error", err)
 		os.Exit(1)
 	}
