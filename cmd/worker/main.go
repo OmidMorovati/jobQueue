@@ -58,7 +58,7 @@ func main() {
 	registry.Register(handlers.NewGenerateReportJob(logger))
 
 	// Create and start worker pool
-	workerPool := worker.NewPool(jobQueue, jobRepo, registry, cfg.WorkerConcurrency, cfg.JobTimeout, logger)
+	workerPool := worker.NewPool(jobQueue, jobRepo, registry, cfg.WorkerConcurrency, cfg.JobTimeout, logger, redisClient)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
