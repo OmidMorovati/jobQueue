@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/omidmorovati/jobQueue/internal/domain"
+	"github.com/omidmorovati/jobQueue/internal/lock"
+	"github.com/redis/go-redis/v9"
 	"log/slog"
 	"sync"
 	"time"
@@ -35,9 +37,10 @@ type Pool struct {
 	concurrency int
 	timeout     time.Duration
 	logger      *slog.Logger
+	redisClient *redis.Client
 }
 
-func NewPool(queue domain.Queue, repo domain.Repository, registry *Registry, concurrency int, timeout time.Duration, logger *slog.Logger) *Pool {
+func NewPool(queue domain.Queue, repo domain.Repository, registry *Registry, concurrency int, timeout time.Duration, logger *slog.Logger, redisClient *redis.Client) *Pool {
 	return &Pool{
 		queue:       queue,
 		repo:        repo,
@@ -45,6 +48,7 @@ func NewPool(queue domain.Queue, repo domain.Repository, registry *Registry, con
 		concurrency: concurrency,
 		timeout:     timeout,
 		logger:      logger,
+		redisClient: redisClient,
 	}
 }
 
@@ -98,6 +102,23 @@ func (p *Pool) runWorker(ctx context.Context, workerID int) {
 }
 
 func (p *Pool) processJob(ctx context.Context, job *domain.Job, workerID int) {
+	//Create distributed lock for this job
+	lockKey := fmt.Sprintf("job:lock:%s", job.ID)
+	lock := lock.NewDistributedLock(p.redisClient, lockKey, 30*time.Second)
+	//Try to acquire lock
+	acquired, err := lock.Acquire(ctx)
+	if err != nil {
+		p.logger.Error("lock acquire failed", "error", err, "job_id", job.ID)
+		return
+	}
+	if !acquired {
+		//Another worker is processing this job
+		p.logger.Debug("job already locked by another worker", "job_id", job.ID)
+		return
+	}
+	//Ensure lock is released when done
+	defer lock.Release(ctx)
+
 	p.logger.Info("processing job", "job_id", job.ID, "type", job.Type, "worker_id", workerID)
 
 	// Update status to processing
