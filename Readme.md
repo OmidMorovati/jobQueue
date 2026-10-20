@@ -55,10 +55,6 @@ A production-ready distributed job queue system built with Go, Redis, and Postgr
 - **Redis 7+** — Fast priority queue with sorted sets
 - **PostgreSQL 16+** — Durable job storage
 
-**Frontend**
-- **HTMX** — Dynamic UI updates without JavaScript frameworks
-- **Go Templates** — Server-side rendering
-
 ## 📋 Prerequisites
 
 - Go 1.21 or higher
@@ -446,35 +442,6 @@ PENDING → PROCESSING → COMPLETED
         NO  → FAILED (permanent)
 ```
 
-## 🎓 What You'll Learn
-
-By studying this project, you'll master:
-
-**Concurrency Patterns**
-- Worker pools with goroutines
-- Distributed locks with Redis
-- Semaphores for rate limiting
-- Context propagation
-- Graceful shutdown
-
-**Distributed Systems**
-- Dual storage (fast cache + durable persistence)
-- Priority queues with sorted sets
-- Idempotent processing
-- Retry strategies with exponential backoff
-
-**Production Patterns**
-- Clean architecture
-- Interface-driven design
-- Structured logging
-- Configuration management
-
-**Database Design**
-- Job state machines
-- Indexing strategies
-- Transaction handling
-- Audit trails
-
 ## 🤝 Contributing
 
 Contributions are welcome! Please follow these steps:
@@ -506,5 +473,3 @@ This project is licensed under the MIT License.
 ---
 
 **Built with ❤️ using Go**
-
-*This project demonstrates production-grade patterns for building distributed systems in Go.*
