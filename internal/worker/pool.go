@@ -139,7 +139,7 @@ func (p *Pool) processJob(ctx context.Context, job *domain.Job, workerID int) {
 	jobCtx, cancel := context.WithTimeout(ctx, p.timeout)
 	defer cancel()
 
-	err := handler.Execute(jobCtx, job.Payload)
+	err = handler.Execute(jobCtx, job.Payload)
 
 	if err != nil {
 		p.logger.Error("job failed", "job_id", job.ID, "error", err, "retry_count", job.RetryCount)

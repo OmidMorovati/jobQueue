@@ -54,7 +54,7 @@ func main() {
 
 	// Register job handlers
 	registry := worker.NewRegistry()
-	registry.Register(handlers.NewSendEmailJob(logger))
+	registry.Register(handlers.NewSendEmailJob(logger, 5))
 	registry.Register(handlers.NewGenerateReportJob(logger))
 
 	// Create and start worker pool

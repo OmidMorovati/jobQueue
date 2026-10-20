@@ -3,17 +3,23 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"github.com/omidmorovati/jobQueue/internal/semaphore"
 	"log/slog"
 	"time"
 )
 
 // SendEmailJob sends an email
 type SendEmailJob struct {
-	logger *slog.Logger
+	logger       *slog.Logger
+	emailLimiter *semaphore.ResourceLimiter
 }
 
-func NewSendEmailJob(logger *slog.Logger) *SendEmailJob {
-	return &SendEmailJob{logger: logger}
+func NewSendEmailJob(logger *slog.Logger, maxConcurrent int64) *SendEmailJob {
+	return &SendEmailJob{
+		logger:       logger,
+		emailLimiter: semaphore.NewResourceLimiter("email_api", maxConcurrent),
+	}
 }
 
 func (h *SendEmailJob) Type() string {
@@ -31,12 +37,14 @@ func (h *SendEmailJob) Execute(ctx context.Context, payload json.RawMessage) err
 		return err
 	}
 
+	if err := h.emailLimiter.Acquire(ctx); err != nil {
+		return fmt.Errorf("failed to acquire email limiter: %w", err)
+	}
+	defer h.emailLimiter.Release()
 	h.logger.Info("sending email", "to", data.To, "subject", data.Subject)
-
-	// Simulate email sending (replace with actual email service)
+	// Simulate email API call
 	time.Sleep(2 * time.Second)
-
-	h.logger.Info("email sent successfully", "to", data.To)
+	h.logger.Info("email sent", "to", data.To, "subject", data.Subject)
 	return nil
 }
 
