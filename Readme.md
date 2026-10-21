@@ -1,6 +1,6 @@
 # 🚀 Distributed Job Queue in Go
 
-A production-ready distributed job queue system built with Go, Redis, and PostgreSQL. Features worker pools, distributed locks, semaphores for rate limiting, retry logic, and a real-time dashboard.
+A production-ready distributed job queue system built with Go, Redis, and PostgreSQL. Features worker pools, distributed locks, semaphores for rate limiting, and retry logic with exponential backoff.
 
 ![Go](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat&logo=go)
 ![Redis](https://img.shields.io/badge/Redis-7+-DC382D?style=flat&logo=redis)
@@ -14,7 +14,6 @@ A production-ready distributed job queue system built with Go, Redis, and Postgr
 - 🔒 **Distributed Locks** — Prevent duplicate job execution across multiple workers
 - 🚦 **Semaphores** — Rate limiting for external API calls (email, webhooks, etc.)
 - 🔁 **Retry Logic** — Exponential backoff for failed jobs
-- 📊 **Real-time Dashboard** — HTMX-powered UI with live job monitoring
 - 🎯 **Priority Queues** — High / Medium / Low priority job processing
 - 🛡️ **Graceful Shutdown** — Finish current jobs before exiting
 - 📝 **Structured Logging** — Production-ready logging with `slog`
@@ -33,7 +32,7 @@ A production-ready distributed job queue system built with Go, Redis, and Postgr
               │
               ↓
        ┌─────────────┐
-       │ Worker Pool │ ← 10 concurrent workers
+       │ Worker Pool │ ← N concurrent workers
        │    (Go)     │
        └──────┬──────┘
               │
@@ -119,10 +118,6 @@ In a new terminal:
 go run cmd/worker/main.go
 ```
 
-### 7. Access the Dashboard
-
-Open your browser: **http://localhost:8080/**
-
 ## 📁 Project Structure
 
 ```
@@ -135,8 +130,7 @@ job-queue/
 ├── internal/
 │   ├── api/
 │   │   └── handler/
-│   │       ├── job.go           # Job submission handlers
-│   │       └── dashboard.go     # Dashboard handlers
+│   │       └── job.go           # Job submission handlers
 │   ├── config/
 │   │   └── config.go            # Environment configuration
 │   ├── domain/
@@ -157,13 +151,6 @@ job-queue/
 │       └── tracker.go           # Worker status tracker
 ├── migrations/
 │   └── 001_create_jobs_table.sql
-├── web/
-│   ├── templates/
-│   │   ├── dashboard.html
-│   │   └── partials/
-│   │       ├── stats_cards.html
-│   │       └── jobs_table.html
-│   └── static/
 ├── docker-compose.yml
 ├── .env
 ├── go.mod
@@ -215,19 +202,6 @@ curl http://localhost:8080/jobs
 curl "http://localhost:8080/jobs?status=pending"
 curl "http://localhost:8080/jobs?status=completed"
 curl "http://localhost:8080/jobs?status=failed"
-```
-
-### Dashboard Endpoints
-
-```bash
-# HTML dashboard
-curl http://localhost:8080/
-
-# Stats fragment (HTMX)
-curl http://localhost:8080/api/stats
-
-# Jobs table fragment (HTMX)
-curl http://localhost:8080/api/jobs
 ```
 
 ## 🎯 Job Types
@@ -295,70 +269,6 @@ Register it in `cmd/worker/main.go`:
 ```go
 registry.Register(&handlers.MyCustomJob{})
 ```
-
-## 🔐 Concurrency Patterns
-
-### 1. Worker Pool
-
-A fixed number of goroutines process jobs concurrently:
-
-```go
-for i := 0; i < concurrency; i++ {
-    go func(workerID int) {
-        p.runWorker(ctx, workerID)
-    }(i)
-}
-```
-
-**Benefits:**
-- Controlled concurrency (prevents resource exhaustion)
-- Efficient resource usage
-- Easy to monitor and scale
-
-### 2. Distributed Locks
-
-Redis-based locks prevent duplicate job execution across worker instances:
-
-```go
-lock := lock.NewDistributedLock(redisClient, jobID, 30*time.Second)
-acquired, _ := lock.Acquire(ctx)
-defer lock.Release(ctx)
-```
-
-**Benefits:**
-- Works across multiple worker instances
-- Prevents race conditions
-- Automatic expiration (prevents deadlocks)
-
-### 3. Semaphores
-
-Limit concurrent access to rate-limited resources:
-
-```go
-limiter := semaphore.NewResourceLimiter("email_api", 5)
-limiter.Acquire(ctx)
-defer limiter.Release()
-```
-
-**Benefits:**
-- Protects external APIs from rate limits
-- Prevents overwhelming downstream services
-- Configurable per resource type
-
-### 4. Context Propagation
-
-Cancellation signals flow through the entire call chain:
-
-```go
-ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
-defer cancel()
-handler.Execute(ctx, payload)
-```
-
-**Benefits:**
-- Graceful shutdown
-- Timeout enforcement
-- Cancellation propagation
 
 ## 🔧 Configuration
 
@@ -460,7 +370,6 @@ This project is licensed under the MIT License.
 
 - [Redis](https://redis.io) — For the amazing in-memory data store
 - [PostgreSQL](https://www.postgresql.org) — For the powerful relational database
-- [HTMX](https://htmx.org) — For making dynamic UIs simple
 - [Chi](https://go-chi.github.io/chi/) — For the excellent router
 
 ## 📚 Resources
